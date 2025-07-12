@@ -13,9 +13,6 @@ RUN apt-get update && \
         curl && \
     apt-get clean
 
-# Create folders for file I/O
-RUN mkdir -p /app/uploads /app/output
-
 # Set working directory
 WORKDIR /app
 
@@ -25,9 +22,6 @@ COPY . .
 # ✅ Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
-
-# Fix permissions for uploaded/converted files
-RUN chmod -R 777 /app/uploads /app/output
 
 EXPOSE 5000
 
