@@ -1,11 +1,9 @@
-# Use an official Python image
 FROM python:3.11-slim
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install required packages
+# Install system packages
 RUN apt-get update && \
     apt-get install -y libreoffice curl && \
     apt-get clean
@@ -13,18 +11,15 @@ RUN apt-get update && \
 # Set work directory
 WORKDIR /app
 
-# Copy app files
+# Copy code
 COPY . /app/
 
-# Install dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# Install Python dependencies
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Create upload/output folders
-RUN mkdir -p uploads output
+# Ensure folders exist
+RUN mkdir -p uploads output && chmod -R 777 uploads output
 
-# Expose port
 EXPOSE 5000
 
-# Run app
 CMD ["python", "app.py"]

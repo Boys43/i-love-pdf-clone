@@ -18,26 +18,33 @@ def index():
 @app.route('/convert', methods=['POST'])
 def convert():
     if 'pdf_file' not in request.files:
-        return redirect('/')
+        return "No file part", 400
 
     file = request.files['pdf_file']
     if file.filename == '' or not file.filename.lower().endswith('.pdf'):
-        return redirect('/')
+        return "Invalid file", 400
 
     filename = secure_filename(file.filename)
     input_path = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(input_path)
+
     output_filename = os.path.splitext(filename)[0] + '.docx'
     output_path = os.path.join(OUTPUT_FOLDER, output_filename)
 
-    file.save(input_path)
-
     try:
-        # Convert using LibreOffice
-        subprocess.run([
-            "libreoffice", "--headless", "--convert-to", "docx", "--outdir", OUTPUT_FOLDER, input_path
+        result = subprocess.run([
+            "libreoffice",
+            "--headless",
+            "--convert-to", "docx:MS Word 2007 XML",
+            "--outdir", OUTPUT_FOLDER,
+            input_path
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+
+        print("LibreOffice STDOUT:", result.stdout.decode())
+        print("LibreOffice STDERR:", result.stderr.decode())
+
     except subprocess.CalledProcessError as e:
-        return f"Conversion failed: {e.stderr.decode()}", 500
+        return f"Conversion failed:<br>{e.stderr.decode()}", 500
 
     if not os.path.exists(output_path):
         return "Conversion failed: output file not found.", 500
