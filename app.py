@@ -1,10 +1,10 @@
 import os
+import subprocess
 from flask import Flask, render_template, request, send_file, redirect
 from werkzeug.utils import secure_filename
-from docx import Document
-from pdf2docx import Converter
 
 app = Flask(__name__)
+
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'output'
 
@@ -21,18 +21,26 @@ def convert():
         return redirect('/')
 
     file = request.files['pdf_file']
-    if file.filename == '':
+    if file.filename == '' or not file.filename.lower().endswith('.pdf'):
         return redirect('/')
 
     filename = secure_filename(file.filename)
     input_path = os.path.join(UPLOAD_FOLDER, filename)
-    output_path = os.path.join(OUTPUT_FOLDER, filename.replace('.pdf', '.docx'))
+    output_filename = os.path.splitext(filename)[0] + '.docx'
+    output_path = os.path.join(OUTPUT_FOLDER, output_filename)
 
     file.save(input_path)
 
-    cv = Converter(input_path)
-    cv.convert(output_path, start=0, end=None)
-    cv.close()
+    try:
+        # Convert using LibreOffice
+        subprocess.run([
+            "libreoffice", "--headless", "--convert-to", "docx", "--outdir", OUTPUT_FOLDER, input_path
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+    except subprocess.CalledProcessError as e:
+        return f"Conversion failed: {e.stderr.decode()}", 500
+
+    if not os.path.exists(output_path):
+        return "Conversion failed: output file not found.", 500
 
     return send_file(output_path, as_attachment=True)
 
